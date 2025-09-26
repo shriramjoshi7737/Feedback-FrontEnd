@@ -86,7 +86,7 @@ function Login() {
   return (
     <>
       <div className="container">
-        <h2 className="page-header text-center mt-3">Login</h2>
+        <h2 className="page-header text-center mt-3">Login Page</h2>
         <div className="login-form">
           <div className="mb-3">
             <label>Email</label>
