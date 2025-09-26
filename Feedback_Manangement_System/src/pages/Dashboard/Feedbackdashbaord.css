@@ -1,0 +1,19 @@
+.page-header {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.MuiDataGrid-root {
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.MuiDataGrid-columnHeaders {
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
+
+.MuiDataGrid-cell {
+  font-size: 0.9rem;
+}
