@@ -48,8 +48,22 @@ export default function FeedbackTypeList() {
     navigate("/app/feedback-type-form");
   };
 
-  const handleEdit = (id) => {
-    navigate(`/app/feedback-type-form/${id}`);
+  const handleEdit = async (id) => {
+    try {
+      await Api.get(`FeedbackType/CheckEditable/${id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      navigate(`/app/feedback-type-form/${id}`);
+    } catch (err) {
+      if (err.response?.data?.message) {
+        toast.error(err.response.data.message);
+      } else {
+        toast.error("Unable to edit this feedback type.");
+      }
+    }
   };
 
   const confirmDelete = (id) => {

@@ -15,22 +15,20 @@ import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { IconButton } from "@mui/material";
-
+import { Button } from "@mui/material";
 
 export default function CourseWiseReport() {
   const [rows, setRows] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  
   const [courseFilter, setCourseFilter] = useState("");
   const [moduleFilter, setModuleFilter] = useState("");
   const [feedbackFilter, setFeedbackFilter] = useState("");
-const token = localStorage.getItem("token");
- 
-  useEffect(() => {
+  const token = localStorage.getItem("token");
 
-    Api.get("Feedback/CourseWiseReportWithRating",{
+  useEffect(() => {
+    Api.get("Feedback/CourseWiseReportWithRating", {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -66,7 +64,6 @@ const token = localStorage.getItem("token");
       });
   }, []);
 
- 
   useEffect(() => {
     let filtered = rows;
 
@@ -82,7 +79,6 @@ const token = localStorage.getItem("token");
 
     setFilteredRows(filtered);
   }, [courseFilter, moduleFilter, feedbackFilter, rows]);
-
 
   const columns = [
     {
@@ -122,7 +118,9 @@ const token = localStorage.getItem("token");
       align: "center",
       headerAlign: "center",
       renderHeader: () => (
-        <span style={{ color: "black", fontWeight: "bold" }}>Feedback Type</span>
+        <span style={{ color: "black", fontWeight: "bold" }}>
+          Feedback Type
+        </span>
       ),
     },
     {
@@ -197,13 +195,16 @@ const token = localStorage.getItem("token");
       startY: 60,
       theme: "grid",
       styles: { halign: "center", valign: "middle", fontSize: 10 },
-      headStyles: { fillColor: [25, 118, 210], textColor: "#fff", fontStyle: "bold" },
+      headStyles: {
+        fillColor: [25, 118, 210],
+        textColor: "#fff",
+        fontStyle: "bold",
+      },
     });
 
     doc.save("CourseWiseReport.pdf");
   };
 
-  
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" mt={5}>
@@ -212,13 +213,14 @@ const token = localStorage.getItem("token");
     );
   }
 
- 
   const uniqueCourses = [...new Set(rows.map((r) => r.courseName))];
   const uniqueModules =
     courseFilter !== ""
       ? [
           ...new Set(
-            rows.filter((r) => r.courseName === courseFilter).map((r) => r.moduleName)
+            rows
+              .filter((r) => r.courseName === courseFilter)
+              .map((r) => r.moduleName)
           ),
         ]
       : [];
@@ -228,7 +230,8 @@ const token = localStorage.getItem("token");
           ...new Set(
             rows
               .filter(
-                (r) => r.courseName === courseFilter && r.moduleName === moduleFilter
+                (r) =>
+                  r.courseName === courseFilter && r.moduleName === moduleFilter
               )
               .map((r) => r.feedbackType)
           ),
@@ -240,14 +243,13 @@ const token = localStorage.getItem("token");
       <Typography variant="h5" align="center" gutterBottom>
         Course Wise Report with Ratings
       </Typography>
-<Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-    <IconButton color="primary" onClick={downloadPDF}>
-    <PictureAsPdfIcon />
-   </IconButton>
-        </Box>
-     
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+        <Button variant="contained" color="primary" onClick={downloadPDF}>
+          Download PDF
+        </Button>
+      </Box>
+
       <Grid container spacing={2} mb={2}>
-        
         <Grid item xs={12} sm={4}>
           <FormControl fullWidth sx={{ minWidth: 300 }}>
             <InputLabel sx={{ fontSize: "1.1rem" }}>Course</InputLabel>
@@ -275,9 +277,12 @@ const token = localStorage.getItem("token");
           </FormControl>
         </Grid>
 
-       
         <Grid item xs={12} sm={4}>
-          <FormControl fullWidth disabled={!courseFilter} sx={{ minWidth: 300 }}>
+          <FormControl
+            fullWidth
+            disabled={!courseFilter}
+            sx={{ minWidth: 300 }}
+          >
             <InputLabel sx={{ fontSize: "1.1rem" }}>Module</InputLabel>
             <Select
               value={moduleFilter}
@@ -302,9 +307,12 @@ const token = localStorage.getItem("token");
           </FormControl>
         </Grid>
 
-       
         <Grid item xs={12} sm={4}>
-          <FormControl fullWidth disabled={!moduleFilter} sx={{ minWidth: 300 }}>
+          <FormControl
+            fullWidth
+            disabled={!moduleFilter}
+            sx={{ minWidth: 300 }}
+          >
             <InputLabel sx={{ fontSize: "1.1rem" }}>Feedback Type</InputLabel>
             <Select
               value={feedbackFilter}
@@ -327,7 +335,6 @@ const token = localStorage.getItem("token");
         </Grid>
       </Grid>
 
-      
       <DataGrid
         rows={filteredRows}
         columns={columns}

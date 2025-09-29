@@ -109,12 +109,15 @@ export default function ScheduleFeedbackList() {
             size="small"
             onClick={async () => {
               try {
-                await Api.delete(`Feedback/DeleteFeedbackGroup/${feedbackGroupId}`, {
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                  },
-                });
+                await Api.delete(
+                  `Feedback/DeleteFeedbackGroup/${feedbackGroupId}`,
+                  {
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                );
                 queryClient.invalidateQueries({ queryKey: ["feedbacks"] });
                 toast.dismiss();
                 toast.success("Record deleted successfully!");
@@ -156,7 +159,7 @@ export default function ScheduleFeedbackList() {
   };
 
   const columns = [
-    { field: "feedbackGroupId", headerName: "Id", width: 100 },
+    { field: "feedbackGroupId", headerName: "Id", width: 100, flex: 0.5 },
     { field: "courseName", headerName: "Course", flex: 1 },
     { field: "moduleName", headerName: "Module", flex: 1 },
     { field: "feedbackTypeName", headerName: "Type", flex: 1 },
@@ -164,7 +167,7 @@ export default function ScheduleFeedbackList() {
     {
       field: "groupName",
       headerName: "Group",
-      flex: 1,
+      flex: 0.7,
       renderCell: (params) =>
         params.value && params.value.toString().trim() !== ""
           ? params.value
@@ -186,7 +189,7 @@ export default function ScheduleFeedbackList() {
     {
       field: "filledby",
       headerName: "FilledBy",
-      flex: 1,
+      flex: 0.5,
       renderCell: (params) => (
         <a
           href={`student-list/${params.row.feedbackGroupId ?? params.row.Id}`}
@@ -199,7 +202,7 @@ export default function ScheduleFeedbackList() {
     {
       field: "remaining",
       headerName: "Remaining",
-      flex: 1,
+      flex: 0.5,
       renderCell: (params) => (
         <a
           href={`remaining/${params.row.feedbackGroupId ?? params.row.Id}`}
@@ -209,11 +212,12 @@ export default function ScheduleFeedbackList() {
         </a>
       ),
     },
-    { field: "status", headerName: "Status", flex: 1 },
+    { field: "status", headerName: "Status", flex: 0.7 },
     {
       field: "actions",
       headerName: "Action",
-      flex: 1,
+      //flex: 2,
+      width: 150,
       renderCell: (params) => {
         const idForRow = params.row.feedbackGroupId ?? params.row.Id;
         return (
