@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Api from "../../services/api";
 
 function AddCourse() {
   const [courseName, setCourseName] = useState("");
@@ -15,13 +16,12 @@ function AddCourse() {
   const token = localStorage.getItem("token");
 
   const fetchCourses = () => {
-    axios
-      .get("https://localhost:7056/api/GetAllCourse", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
+    Api.get("GetAllCourse", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => {
         setCourses(res.data);
       })
@@ -56,9 +56,8 @@ function AddCourse() {
         },
       });
 
-
       toast.success("✅ Course added successfully!");
-      
+
       setCourseName("");
       setStartDate("");
       setEndDate("");
@@ -66,7 +65,10 @@ function AddCourse() {
       setCourseType("");
       fetchCourses();
     } catch (error) {
-      console.error("Error adding course:", error.response?.data || error.message);
+      console.error(
+        "Error adding course:",
+        error.response?.data || error.message
+      );
 
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors);
@@ -82,11 +84,14 @@ function AddCourse() {
 
   return (
     <div className="container mt-4">
-
       {/* Toast notifications */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+      />
 
-    <h2 className="text-center">Add Course</h2>
+      <h2 className="text-center">Add Course</h2>
 
       {errors.length > 0 && (
         <div className="alert alert-danger">
@@ -155,7 +160,11 @@ function AddCourse() {
           />
         </div>
 
-        <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+        <button
+          type="submit"
+          className="btn btn-primary w-100"
+          disabled={loading}
+        >
           {loading ? "Adding..." : "Add Course"}
         </button>
       </form>
