@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+//import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Api from "../../services/api";
@@ -29,13 +29,12 @@ function AddModule() {
 
   // Fetch modules
   const fetchModules = () => {
-    axios
-      .get("https://localhost:7056/api/Modules", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      })
+    Api.get("Modules", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
       .then((res) => setModules(res.data))
 
       .catch((err) => {
@@ -59,7 +58,7 @@ function AddModule() {
     };
 
     try {
-      await axios.post("https://localhost:7056/api/Modules", newModule, {
+      await Api.post("Modules", newModule, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
