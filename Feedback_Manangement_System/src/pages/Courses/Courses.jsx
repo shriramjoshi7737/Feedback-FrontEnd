@@ -49,7 +49,7 @@ function AddCourse() {
     };
 
     try {
-      await axios.post("https://localhost:7056/api/AddCourse", newCourse, {
+      await Api.post("AddCourse", newCourse, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
