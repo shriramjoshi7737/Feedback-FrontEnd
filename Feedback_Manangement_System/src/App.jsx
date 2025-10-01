@@ -30,6 +30,7 @@ import StaffForm from "./pages/Staff/StaffForm";
 import AddCourse from "./pages/Courses/Courses";
 import AddGroups from "./pages/Groups/Groups";
 import AddModule from "./pages/Modules/Modules";
+import StaffList from "./pages/Staff/StaffList";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -129,6 +130,7 @@ function App() {
                 <Route path="add-course" element={<AddCourse />} />
                 <Route path="add-module" element={<AddModule />} />
                 <Route path="add-group" element={<AddGroups />} />
+                <Route path="staff-list" element={<StaffList />} />
               </Route>
               <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
                 <Route
@@ -143,6 +145,7 @@ function App() {
                   path="student-feedback-form"
                   element={<StudentFeedbackForm />}
                 />
+
                 <Route
                   path="submitted-feedback-form"
                   element={<SubmittedFeedbackForm />}

@@ -1,22 +1,18 @@
 import React from "react";
-import "./Component.css";
-import Box from "@mui/material/Box";
-import { DataGrid } from "@mui/x-data-grid";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { Button } from "@mui/material";
+import { Table, Button, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import Api from "../../services/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function ScheduleFeedbackList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const token = localStorage.getItem("token");
 
-  const [paginationModel, setPaginationModel] = React.useState({
+  const [pagination, setPagination] = React.useState({
     page: 0,
     pageSize: 5,
   });
@@ -34,6 +30,7 @@ export default function ScheduleFeedbackList() {
         },
       }
     );
+
     const { data, totalCount } = res.data;
 
     const enriched = await Promise.all(
@@ -63,12 +60,9 @@ export default function ScheduleFeedbackList() {
   };
 
   const { data, isFetching } = useQuery({
-    queryKey: ["feedbacks", paginationModel.page, paginationModel.pageSize],
+    queryKey: ["feedbacks", pagination.page, pagination.pageSize],
     queryFn: () =>
-      fetchFeedbacks({
-        page: paginationModel.page,
-        pageSize: paginationModel.pageSize,
-      }),
+      fetchFeedbacks({ page: pagination.page, pageSize: pagination.pageSize }),
     keepPreviousData: true,
     staleTime: 1000 * 60,
   });
@@ -77,36 +71,18 @@ export default function ScheduleFeedbackList() {
     if (data?.totalCount != null) lastTotalCountRef.current = data.totalCount;
   }, [data]);
 
-  React.useEffect(() => {
-    const nextPage = paginationModel.page + 1;
-    const pageSize = paginationModel.pageSize;
-    const totalCount = data?.totalCount ?? lastTotalCountRef.current ?? 0;
-
-    if (nextPage * pageSize < totalCount) {
-      queryClient.prefetchQuery({
-        queryKey: ["feedbacks", nextPage, pageSize],
-        queryFn: () => fetchFeedbacks({ page: nextPage, pageSize }),
-      });
-    }
-  }, [paginationModel, data, queryClient]);
-
   const rowCount = data?.totalCount ?? lastTotalCountRef.current ?? 0;
   const rows = data?.rows ?? [];
 
-  const handleAddClick = () => {
-    navigate("/app/schedule-feedback-form");
-  };
-
-  const handleDelete = async (feedbackGroupId) => {
-    // ✅ Custom confirmation with toast (instead of window.confirm)
+  // delete record
+  const handleDelete = (feedbackGroupId) => {
     toast.info(
       <div>
         <p>Are you sure you want to delete this record?</p>
-        <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+        <div className="d-flex gap-2 mt-2">
           <Button
-            variant="contained"
-            color="error"
-            size="small"
+            variant="danger"
+            size="sm"
             onClick={async () => {
               try {
                 await Api.delete(
@@ -122,7 +98,6 @@ export default function ScheduleFeedbackList() {
                 toast.dismiss();
                 toast.success("Record deleted successfully!");
               } catch (error) {
-                console.error("Error deleting record:", error);
                 const message =
                   error?.response?.data?.message ||
                   error?.message ||
@@ -134,11 +109,7 @@ export default function ScheduleFeedbackList() {
           >
             Yes
           </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => toast.dismiss()}
-          >
+          <Button variant="secondary" size="sm" onClick={() => toast.dismiss()}>
             No
           </Button>
         </div>
@@ -158,151 +129,145 @@ export default function ScheduleFeedbackList() {
     });
   };
 
-  const columns = [
-    { field: "feedbackGroupId", headerName: "Id", width: 100, flex: 0.5 },
-    { field: "courseName", headerName: "Course", flex: 1 },
-    { field: "moduleName", headerName: "Module", flex: 1 },
-    { field: "feedbackTypeName", headerName: "Type", flex: 1 },
-    { field: "staffName", headerName: "Staff", flex: 1 },
-    {
-      field: "groupName",
-      headerName: "Group",
-      flex: 0.7,
-      renderCell: (params) =>
-        params.value && params.value.toString().trim() !== ""
-          ? params.value
-          : "-",
-    },
-    { field: "session", headerName: "Session", flex: 1 },
-    {
-      field: "startDate",
-      headerName: "Start Date",
-      flex: 1,
-      renderCell: (params) => formatDate(params.value),
-    },
-    {
-      field: "endDate",
-      headerName: "End Date",
-      flex: 1,
-      renderCell: (params) => formatDate(params.value),
-    },
-    {
-      field: "filledby",
-      headerName: "FilledBy",
-      flex: 0.5,
-      renderCell: (params) => (
-        <a
-          href={`student-list/${params.row.feedbackGroupId ?? params.row.Id}`}
-          style={{ color: "blue", textDecoration: "underline" }}
-        >
-          {params.value ?? "-"}
-        </a>
-      ),
-    },
-    {
-      field: "remaining",
-      headerName: "Remaining",
-      flex: 0.5,
-      renderCell: (params) => (
-        <a
-          href={`remaining/${params.row.feedbackGroupId ?? params.row.Id}`}
-          style={{ color: "blue", textDecoration: "underline" }}
-        >
-          {params.value ?? "-"}
-        </a>
-      ),
-    },
-    { field: "status", headerName: "Status", flex: 0.7 },
-    {
-      field: "actions",
-      headerName: "Action",
-      //flex: 2,
-      width: 150,
-      renderCell: (params) => {
-        const idForRow = params.row.feedbackGroupId ?? params.row.Id;
-        return (
-          <>
-            <Button
-              color="primary"
-              size="small"
-              sx={{ mr: 1 }}
-              onClick={() => {
-                const start = new Date(params.row.startDate);
-                const now = new Date();
-                if (start <= now) {
-                  toast.error("You cannot update feedback after start date.");
-                  return;
-                }
-                navigate(`/app/update-feedback-form/${params.row.feedbackId}`, {
-                  state: { feedbackId: params.row.feedbackId },
-                });
-              }}
-            >
-              <EditIcon />
-            </Button>
-
-            <Button
-              color="error"
-              size="small"
-              onClick={() => handleDelete(idForRow)}
-            >
-              <DeleteIcon />
-            </Button>
-          </>
-        );
-      },
-    },
-  ];
-
-  const onPaginationModelChange = (model) => {
-    if (model.pageSize !== paginationModel.pageSize) {
-      setPaginationModel({ page: 0, pageSize: model.pageSize });
-      return;
-    }
-    if (model.page !== paginationModel.page) {
-      setPaginationModel((prev) => ({ ...prev, page: model.page }));
-    }
-  };
-
   return (
-    <div className="container">
+    <div className="container mt-4">
       <ToastContainer position="top-right" autoClose={3000} />
-      <h2 className="table-header text-center mt-3">Schedule Feedback List</h2>
+      <h2 className="text-center mb-3">Schedule Feedback List</h2>
 
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          mb: 2,
-          padding: 2,
-          borderRadius: 1,
-        }}
-      >
+      <div className="d-flex justify-content-end mb-3">
         <Button
-          variant="outlined"
-          color="primary"
-          sx={{ position: "absolute", right: 50 }}
-          onClick={handleAddClick}
+          variant="primary"
+          onClick={() => navigate("/app/schedule-feedback-form")}
         >
           Schedule Feedback
         </Button>
-      </Box>
+      </div>
 
-      <Box sx={{ height: 500, width: "100%" }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          getRowId={(row) => row.feedbackGroupId ?? row.Id ?? row.feedbackId}
-          paginationMode="server"
-          paginationModel={paginationModel}
-          onPaginationModelChange={onPaginationModelChange}
-          rowCount={rowCount}
-          loading={isFetching}
-          pageSizeOptions={[5, 10, 20]}
-          disableRowSelectionOnClick
-        />
-      </Box>
+      <div className="table-responsive">
+        <Table bordered hover striped className="align-middle">
+          <thead className="table-dark">
+            <tr>
+              {/* <th>ID</th> */}
+              <th>Course</th>
+              <th>Module</th>
+              <th>Type</th>
+              <th>Staff</th>
+              <th>Group</th>
+              <th>Session</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Filled By</th>
+              <th>Remaining</th>
+              {/* <th>Status</th> */}
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {isFetching ? (
+              <tr>
+                <td colSpan="13" className="text-center">
+                  <Spinner animation="border" size="sm" /> Loading...
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td colSpan="13" className="text-center">
+                  No records found.
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => (
+                <tr key={row.feedbackGroupId ?? row.Id ?? row.feedbackId}>
+                  {/* <td>{row.feedbackGroupId}</td> */}
+                  <td
+                    style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                  >
+                    {row.courseName}
+                  </td>
+                  <td
+                    style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                  >
+                    {row.moduleName}
+                  </td>
+                  <td>{row.feedbackTypeName}</td>
+                  <td>{row.staffName}</td>
+                  <td>{row.groupName?.trim() || "-"}</td>
+                  <td>{row.session}</td>
+                  <td>{formatDate(row.startDate)}</td>
+                  <td>{formatDate(row.endDate)}</td>
+                  <td>
+                    <a href={`student-list/${row.feedbackGroupId}`}>
+                      {row.filledby}
+                    </a>
+                  </td>
+                  <td>
+                    <a href={`remaining/${row.feedbackGroupId}`}>
+                      {row.remaining}
+                    </a>
+                  </td>
+                  {/* <td>{row.status}</td> */}
+                  <td>
+                    <div className="d-flex gap-2">
+                      <button
+                        className="btn btn-sm btn-outline-primary me-2"
+                        onClick={() => {
+                          const start = new Date(row.startDate);
+                          const now = new Date();
+                          if (start <= now) {
+                            toast.error(
+                              "You cannot update feedback after start date."
+                            );
+                            return;
+                          }
+                          navigate(
+                            `/app/update-feedback-form/${row.feedbackId}`,
+                            {
+                              state: { feedbackId: row.feedbackId },
+                            }
+                          );
+                        }}
+                      >
+                        <i className="bi bi-pencil-square"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleDelete(row.feedbackGroupId)}
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </Table>
+      </div>
+
+      {/* Pagination */}
+      <div className="d-flex justify-content-between align-items-center mt-3">
+        <Button
+          disabled={pagination.page === 0}
+          onClick={() =>
+            setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
+          }
+        >
+          Previous
+        </Button>
+        <span>
+          Page {pagination.page + 1} of{" "}
+          {Math.ceil(rowCount / pagination.pageSize) || 1}
+        </span>
+        <Button
+          disabled={(pagination.page + 1) * pagination.pageSize >= rowCount}
+          onClick={() =>
+            setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
+          }
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 }

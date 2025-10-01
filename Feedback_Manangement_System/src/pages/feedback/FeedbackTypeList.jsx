@@ -1,10 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Box from "@mui/material/Box";
-import { DataGrid } from "@mui/x-data-grid";
-import "./Component.css";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Api from "../../services/api";
 import { toast, ToastContainer } from "react-toastify";
@@ -15,6 +9,7 @@ export default function FeedbackTypeList() {
   const [rows, setRows] = useState([]);
   const token = localStorage.getItem("token");
 
+  // Fetch data
   const fetchFeedbackTypes = () => {
     Api.get("FeedbackType/GetFeedbackType", {
       headers: {
@@ -44,10 +39,12 @@ export default function FeedbackTypeList() {
     fetchFeedbackTypes();
   }, []);
 
+  // Add button
   const handleAddClick = () => {
     navigate("/app/feedback-type-form");
   };
 
+  // Edit
   const handleEdit = async (id) => {
     try {
       await Api.get(`FeedbackType/CheckEditable/${id}`, {
@@ -69,30 +66,30 @@ export default function FeedbackTypeList() {
   const confirmDelete = (id) => {
     toast.info(
       <div>
-        <p>Are you sure you want to delete this feedback type?</p>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <Button
-            variant="contained"
-            color="error"
-            size="small"
-            onClick={() => handleDelete(id)}
+        <p>Are you sure you want to delete this record?</p>
+        <div className="d-flex justify-content-center gap-2 mt-2">
+          <button
+            className="btn btn-sm btn-danger"
+            onClick={() => {
+              handleDelete(id);
+              toast.dismiss();
+            }}
           >
             Yes
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            size="small"
+          </button>
+          <button
+            className="btn btn-sm btn-secondary"
             onClick={() => toast.dismiss()}
           >
             No
-          </Button>
+          </button>
         </div>
       </div>,
       { autoClose: false }
     );
   };
 
+  // Delete
   const handleDelete = async (id) => {
     try {
       await Api.delete(`FeedbackType/${id}`, {
@@ -114,92 +111,69 @@ export default function FeedbackTypeList() {
     }
   };
 
-  const columns = [
-    { field: "feedback_type_id", headerName: "ID", width: 50 },
-    {
-      field: "feedback_type_title",
-      headerName: "Title",
-      flex: 1,
-      renderHeader: () => <strong>Title</strong>,
-    },
-    {
-      field: "feedback_type_description",
-      headerName: "Description",
-      flex: 1,
-      renderHeader: () => <strong>Description</strong>,
-    },
-    {
-      field: "group",
-      headerName: "Group",
-      flex: 1,
-      renderCell: (params) => params.value || "-",
-      renderHeader: () => <strong>Group</strong>,
-    },
-    {
-      field: "is_staff",
-      headerName: "Staff",
-      flex: 1,
-      renderCell: (params) => (params.value ? "Yes" : "No"),
-      renderHeader: () => <strong>Staff</strong>,
-    },
-    {
-      field: "is_session",
-      headerName: "Session",
-      flex: 1,
-      renderCell: (params) => (params.value ? "Yes" : "No"),
-      renderHeader: () => <strong>Session</strong>,
-    },
-    {
-      field: "behaviour",
-      headerName: "Behaviour",
-      flex: 1,
-      renderCell: (params) => (params.value ? "Compulsory" : "Optional"),
-      renderHeader: () => <strong>Behaviour</strong>,
-    },
-    {
-      field: "actions",
-      headerName: "Action",
-      flex: 1,
-      renderCell: (params) => (
-        <>
-          <Button
-            color="primary"
-            size="small"
-            onClick={() => handleEdit(params.row.feedback_type_id)}
-          >
-            <EditIcon />
-          </Button>
-          <Button
-            color="error"
-            size="small"
-            onClick={() => confirmDelete(params.row.feedback_type_id)}
-          >
-            <DeleteIcon />
-          </Button>
-        </>
-      ),
-    },
-  ];
-
   return (
-    <div className="container">
-      <h2 className="table-header text-center mt-3">Feedback Type List</h2>
+    <div className="container mt-4">
+      <h2 className="text-center mb-4">Feedback Type List</h2>
 
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-        <Button variant="outlined" color="primary" onClick={handleAddClick}>
-          Add Feedback Type
-        </Button>
-      </Box>
+      <div className="d-flex justify-content-end mb-3">
+        <button className="btn btn-primary" onClick={handleAddClick}>
+          <i className="bi bi-plus-circle"></i> Add Feedback Type
+        </button>
+      </div>
 
-      <Box sx={{ height: 400, width: "100%" }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          getRowId={(row) => row.feedback_type_id}
-          pageSizeOptions={[5, 10, 20]}
-          disableRowSelectionOnClick
-        />
-      </Box>
+      <div className="table-responsive">
+        <table className="table table-bordered table-hover align-middle">
+          <thead className="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Group</th>
+              <th>Staff</th>
+              <th>Session</th>
+              <th>Behaviour</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length > 0 ? (
+              rows.map((row, index) => (
+                <tr key={row.feedback_type_id}>
+                  <td>{index + 1}</td>
+                  <td>{row.feedback_type_title}</td>
+                  <td>{row.feedback_type_description}</td>
+                  <td>{row.group || "-"}</td>
+                  <td>{row.is_staff ? "Yes" : "No"}</td>
+                  <td>{row.is_session ? "Yes" : "No"}</td>
+                  <td>{row.behaviour ? "Compulsory" : "Optional"}</td>
+                  <td>
+                    <div className="d-flex gap-2">
+                      <button
+                        className="btn btn-sm btn-outline-primary me-2"
+                        onClick={() => handleEdit(row.feedback_type_id)}
+                      >
+                        <i className="bi bi-pencil-square"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => confirmDelete(row.feedback_type_id)}
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="8" className="text-center">
+                  No feedback types found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <ToastContainer position="top-right" autoClose={3000} />
     </div>

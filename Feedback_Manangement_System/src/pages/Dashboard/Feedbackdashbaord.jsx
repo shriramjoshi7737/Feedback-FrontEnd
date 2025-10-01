@@ -1,6 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { DataGrid } from "@mui/x-data-grid";
-import { Box } from "@mui/material";
 import "./Feedbackdashbaord.css";
 import { getCourses } from "../../services/course";
 import Api from "../../services/api";
@@ -11,18 +9,8 @@ function FeedbackDashboard() {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedFeedbackType, setSelectedFeedbackType] = useState("");
   const [rows, setRows] = useState([]);
-  // const token = localStorage.getItem("token");
 
   const token = localStorage.getItem("token");
-  // Columns
-  const columns = [
-    { field: "date", headerName: "Date", flex: 1 },
-    { field: "course", headerName: "Course", flex: 1 },
-    { field: "feedbacktype", headerName: "Feedback Type", flex: 1 },
-    { field: "group", headerName: "Group", flex: 1 },
-    { field: "sessions", headerName: "Sessions", flex: 1 },
-    { field: "rating", headerName: "Rating", flex: 1 },
-  ];
 
   // Fetch on mount
   useEffect(() => {
@@ -81,7 +69,6 @@ function FeedbackDashboard() {
           Authorization: `Bearer ${token}`,
         },
       });
-
       setFeedbackTypes(response.data || []);
     } catch (error) {
       console.error("Failed to load feedback types:", error);
@@ -97,6 +84,7 @@ function FeedbackDashboard() {
           courses
             .find((c) => String(c.course_id) === String(selectedCourse))
             ?.course_name.toLowerCase();
+
       const typeMatch =
         !selectedFeedbackType ||
         row.feedbacktype.toLowerCase() ===
@@ -113,58 +101,89 @@ function FeedbackDashboard() {
 
   return (
     <div className="container">
-      <h2 className="page-header text-center mt-3">Feedback Dashboard</h2>
-      <Box p={3} className="mb-5">
-        <Box display="flex" justifyContent="flex-start" gap={2} mb={2}>
-          {/* Course Dropdown */}
-          <select
-            name="courseId"
-            className="form-select form-select-lg"
-            style={{ minWidth: "200px" }}
-            value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
-          >
-            <option value="">Select Course</option>
-            {courses.map((course) => (
-              <option key={course.course_id} value={String(course.course_id)}>
-                {course.course_name}
-              </option>
-            ))}
-          </select>
+      <h2 className="text-center mt-3">Feedback Dashboard</h2>
 
-          {/* Feedback Type Dropdown */}
-          <select
-            className="form-select form-select-lg"
-            style={{ minWidth: "250px" }}
-            value={selectedFeedbackType}
-            onChange={(e) => setSelectedFeedbackType(e.target.value)}
-          >
-            <option value="">Select Feedback Type</option>
-            {feedbackTypes.map((ft) => (
-              <option
-                key={ft.feedback_type_id}
-                value={String(ft.feedback_type_id)}
-              >
-                {ft.feedback_type_title}
-              </option>
-            ))}
-          </select>
-        </Box>
+      {/* Filters */}
+      <div className="d-flex gap-3 mt-4 mb-3">
+        {/* Course Dropdown */}
+        <select
+          name="courseId"
+          className="form-select"
+          style={{ minWidth: "200px" }}
+          value={selectedCourse}
+          onChange={(e) => setSelectedCourse(e.target.value)}
+        >
+          <option value="">Select Course</option>
+          {courses.map((course) => (
+            <option key={course.course_id} value={String(course.course_id)}>
+              {course.course_name}
+            </option>
+          ))}
+        </select>
 
-        <hr className="mb-4" />
+        {/* Feedback Type Dropdown */}
+        <select
+          className="form-select"
+          style={{ minWidth: "250px" }}
+          value={selectedFeedbackType}
+          onChange={(e) => setSelectedFeedbackType(e.target.value)}
+        >
+          <option value="">Select Feedback Type</option>
+          {feedbackTypes.map((ft) => (
+            <option
+              key={ft.feedback_type_id}
+              value={String(ft.feedback_type_id)}
+            >
+              {ft.feedback_type_title}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        <div style={{ height: 400, background: "#fff" }}>
-          <DataGrid
-            rows={filteredRows}
-            columns={columns}
-            pageSize={5}
-            rowsPerPageOptions={[5, 10, 20]}
-            getRowId={(row) => row.id}
-            disableSelectionOnClick
-            autoHeight={false}
-          />
-        </div>
-      </Box>
+      <hr />
+
+      {/* Bootstrap Table */}
+      <div className="table-responsive">
+        <table className="table table-bordered table-striped align-middle">
+          <thead className="table-dark">
+            <tr>
+              <th>Date</th>
+              <th>Course</th>
+              <th>Feedback Type</th>
+              <th>Group</th>
+              <th>Sessions</th>
+              <th>Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRows.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="text-center">
+                  No records found
+                </td>
+              </tr>
+            ) : (
+              filteredRows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.date}</td>
+                  <td
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {row.course}
+                  </td>
+                  <td>{row.feedbacktype}</td>
+                  <td>{row.group}</td>
+                  <td>{row.sessions}</td>
+                  <td>{row.rating}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -45,7 +45,11 @@ function AddQuestionForm() {
   return (
     <div className="container mt-4 p-4 border rounded bg-light">
       {/* Toast container */}
-      <ToastContainer position="top-right" autoClose={2500} hideProgressBar={false} />
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar={false}
+      />
 
       <h4 className="text-center mb-4">Add Question</h4>
 
@@ -77,7 +81,14 @@ function AddQuestionForm() {
         <button className="btn btn-primary me-2" onClick={handleAdd}>
           Add & Back
         </button>
-        <button className="btn btn-danger" onClick={() => navigate(-1)}>
+        <button
+          className="btn btn-danger"
+          onClick={() =>
+            navigate("/app/feedback-type-form" + (isUpdate ? `/${id} ` : ""), {
+              state: { formData, questions, isUpdate, id }, // ✅ Pass state back
+            })
+          }
+        >
           Cancel
         </button>
       </div>

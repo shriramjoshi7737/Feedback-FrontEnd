@@ -3,15 +3,18 @@ import React, { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Api from "../../services/api";
+
 function AddModule() {
   const [moduleName, setModuleName] = useState("");
   const [duration, setDuration] = useState("");
   const [courseId, setCourseId] = useState("");
   const [courses, setCourses] = useState([]);
   const [modules, setModules] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const modulesPerPage = 5;
+
   const token = localStorage.getItem("token");
 
-  // Fetch courses
   useEffect(() => {
     Api.get("GetAllCourse", {
       headers: {
@@ -20,14 +23,12 @@ function AddModule() {
       },
     })
       .then((res) => setCourses(res.data))
-
       .catch((err) => {
         console.error("Error fetching courses:", err);
         toast.error("Failed to load courses");
       });
   }, [token]);
 
-  // Fetch modules
   const fetchModules = () => {
     Api.get("Modules", {
       headers: {
@@ -36,7 +37,6 @@ function AddModule() {
       },
     })
       .then((res) => setModules(res.data))
-
       .catch((err) => {
         console.error("Error fetching modules:", err);
         toast.error("Failed to load modules");
@@ -47,7 +47,6 @@ function AddModule() {
     fetchModules();
   }, []);
 
-  // Submit new module
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -77,6 +76,12 @@ function AddModule() {
       toast.error("Failed to add module");
     }
   };
+
+  const indexOfLastModule = currentPage * modulesPerPage;
+  const indexOfFirstModule = indexOfLastModule - modulesPerPage;
+  const currentModules = modules.slice(indexOfFirstModule, indexOfLastModule);
+
+  const totalPages = Math.ceil(modules.length / modulesPerPage);
 
   return (
     <div className="container mt-4">
@@ -130,6 +135,7 @@ function AddModule() {
         </button>
       </form>
 
+      {/* Module List */}
       <h3 className="text-center mb-3">Module List</h3>
       <table className="table table-bordered table-striped">
         <thead>
@@ -141,10 +147,10 @@ function AddModule() {
           </tr>
         </thead>
         <tbody>
-          {modules.length > 0 ? (
-            modules.map((m, i) => (
+          {currentModules.length > 0 ? (
+            currentModules.map((m, i) => (
               <tr key={m.module_id}>
-                <td>{i + 1}</td>
+                <td>{indexOfFirstModule + i + 1}</td>
                 <td>{m.module_name}</td>
                 <td>{m.duration} hours</td>
                 <td>
@@ -162,6 +168,48 @@ function AddModule() {
           )}
         </tbody>
       </table>
+
+      {totalPages > 1 && (
+        <nav>
+          <ul className="pagination justify-content-center">
+            <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+              <button
+                className="page-link"
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                Previous
+              </button>
+            </li>
+
+            {Array.from({ length: totalPages }, (_, i) => (
+              <li
+                key={i}
+                className={`page-item ${currentPage === i + 1 ? "active" : ""}`}
+              >
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage(i + 1)}
+                >
+                  {i + 1}
+                </button>
+              </li>
+            ))}
+
+            <li
+              className={`page-item ${
+                currentPage === totalPages ? "disabled" : ""
+              }`}
+            >
+              <button
+                className="page-link"
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                Next
+              </button>
+            </li>
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }

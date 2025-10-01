@@ -1,32 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { DataGrid } from "@mui/x-data-grid";
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Grid,
-} from "@mui/material";
 import Api from "../../services/api";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import { IconButton } from "@mui/material";
-import { Button } from "@mui/material";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function CourseWiseReport() {
-  const [rows, setRows] = useState([]);
-  const [filteredRows, setFilteredRows] = useState([]);
+  const [reportData, setReportData] = useState([]);
+  const [feedbackTypes, setFeedbackTypes] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [courseFilter, setCourseFilter] = useState("");
-  const [moduleFilter, setModuleFilter] = useState("");
-  const [feedbackFilter, setFeedbackFilter] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState("");
+  const [midType, setMidType] = useState("");
+  const [endType, setEndType] = useState("");
+  const [infraType, setInfraType] = useState("");
+
   const token = localStorage.getItem("token");
 
+  // Fetch coursewise report
   useEffect(() => {
     Api.get("Feedback/CourseWiseReportWithRating", {
       headers: {
@@ -35,326 +24,205 @@ export default function CourseWiseReport() {
       },
     })
       .then((res) => {
-        const flattened = [];
-        let idCounter = 1;
-
-        res.data.forEach((course) => {
-          course.modules.forEach((module) => {
-            module.feedbackTypes.forEach((ft) => {
-              flattened.push({
-                id: idCounter++,
-                courseName: course.courseName,
-                courseAverageRating: course.courseAverageRating,
-                moduleName: module.moduleName,
-                moduleAverageRating: module.moduleAverageRating,
-                feedbackType: ft.feedbackTypeTitle,
-                rating: ft.averageRating,
-              });
-            });
-          });
-        });
-
-        setRows(flattened);
-        setFilteredRows(flattened);
+        setReportData(res.data);
         setLoading(false);
       })
       .catch((err) => {
         console.error("Error fetching coursewise report:", err);
         setLoading(false);
       });
-  }, []);
+  }, [token]);
 
+  // Fetch feedback types for dropdowns
   useEffect(() => {
-    let filtered = rows;
-
-    if (courseFilter) {
-      filtered = filtered.filter((r) => r.courseName === courseFilter);
-    }
-    if (moduleFilter) {
-      filtered = filtered.filter((r) => r.moduleName === moduleFilter);
-    }
-    if (feedbackFilter) {
-      filtered = filtered.filter((r) => r.feedbackType === feedbackFilter);
-    }
-
-    setFilteredRows(filtered);
-  }, [courseFilter, moduleFilter, feedbackFilter, rows]);
-
-  const columns = [
-    {
-      field: "id",
-      headerName: "Sr. No",
-      flex: 0.5,
-      align: "center",
-      headerAlign: "center",
-      renderHeader: () => (
-        <span style={{ color: "black", fontWeight: "bold" }}>Sr. No</span>
-      ),
-    },
-    {
-      field: "courseName",
-      headerName: "Course",
-      flex: 1,
-      align: "center",
-      headerAlign: "center",
-      renderHeader: () => (
-        <span style={{ color: "black", fontWeight: "bold" }}>Course</span>
-      ),
-    },
-    {
-      field: "moduleName",
-      headerName: "Module",
-      flex: 1,
-      align: "center",
-      headerAlign: "center",
-      renderHeader: () => (
-        <span style={{ color: "black", fontWeight: "bold" }}>Module</span>
-      ),
-    },
-    {
-      field: "feedbackType",
-      headerName: "Feedback Type",
-      flex: 1.5,
-      align: "center",
-      headerAlign: "center",
-      renderHeader: () => (
-        <span style={{ color: "black", fontWeight: "bold" }}>
-          Feedback Type
-        </span>
-      ),
-    },
-    {
-      field: "courseAverageRating",
-      headerName: "Course Avg Rating",
-      flex: 1,
-      align: "center",
-      headerAlign: "center",
-      renderHeader: () => (
-        <span style={{ color: "black", fontWeight: "bold" }}>
-          Course Average Rating
-        </span>
-      ),
-    },
-    {
-      field: "moduleAverageRating",
-      headerName: "Module Avg Rating",
-      flex: 1,
-      align: "center",
-      headerAlign: "center",
-      renderHeader: () => (
-        <span style={{ color: "black", fontWeight: "bold" }}>
-          Module Average Rating
-        </span>
-      ),
-    },
-    {
-      field: "rating",
-      headerName: "Rating",
-      flex: 1,
-      align: "center",
-      headerAlign: "center",
-      renderHeader: () => (
-        <div style={{ textAlign: "center" }}>
-          <span style={{ color: "black", fontWeight: "bold" }}>Rating</span>
-          <br />
-          <span style={{ fontSize: "12px", color: "gray" }}>
-            per feedback type
-          </span>
-        </div>
-      ),
-    },
-  ];
-
-  const downloadPDF = () => {
-    const doc = new jsPDF("l", "pt", "a4");
-    doc.setFontSize(16);
-    doc.text("Course Wise Report with Ratings", 40, 40);
-
-    const tableColumn = [
-      "Sr. No",
-      "Course",
-      "Module",
-      "Feedback Type",
-      "Course Avg Rating",
-      "Module Avg Rating",
-      "Rating",
-    ];
-    const tableRows = filteredRows.map((row) => [
-      row.id,
-      row.courseName,
-      row.moduleName,
-      row.feedbackType,
-      row.courseAverageRating,
-      row.moduleAverageRating,
-      row.rating,
-    ]);
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 60,
-      theme: "grid",
-      styles: { halign: "center", valign: "middle", fontSize: 10 },
-      headStyles: {
-        fillColor: [25, 118, 210],
-        textColor: "#fff",
-        fontStyle: "bold",
+    Api.get("FeedbackType/GetFeedbackType", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
-    });
+    })
+      .then((res) => {
+        setFeedbackTypes(res.data);
+      })
+      .catch((err) => {
+        console.error("Error fetching feedback types:", err);
+      });
+  }, [token]);
 
-    doc.save("CourseWiseReport.pdf");
-  };
+  // Fetch all courses
+  useEffect(() => {
+    Api.get("GetAllCourse", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        setCourses(res.data);
+      })
+      .catch((err) => {
+        console.error("Error fetching courses:", err);
+      });
+  }, [token]);
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" mt={5}>
-        <CircularProgress />
-      </Box>
+      <div className="d-flex justify-content-center align-items-center mt-5">
+        <div className="spinner-border text-primary" role="status"></div>
+      </div>
     );
   }
 
-  const uniqueCourses = [...new Set(rows.map((r) => r.courseName))];
-  const uniqueModules =
-    courseFilter !== ""
-      ? [
-          ...new Set(
-            rows
-              .filter((r) => r.courseName === courseFilter)
-              .map((r) => r.moduleName)
-          ),
-        ]
-      : [];
-  const uniqueFeedbacks =
-    moduleFilter !== ""
-      ? [
-          ...new Set(
-            rows
-              .filter(
-                (r) =>
-                  r.courseName === courseFilter && r.moduleName === moduleFilter
-              )
-              .map((r) => r.feedbackType)
-          ),
-        ]
-      : [];
+  // ---- Dropdown Data Split ----
+  const midTypes = feedbackTypes.filter((t) =>
+    t.feedback_type_title.toLowerCase().includes("mid")
+  );
+  const endTypes = feedbackTypes.filter((t) =>
+    t.feedback_type_title.toLowerCase().includes("end")
+  );
+  const infraTypes = feedbackTypes.filter((t) =>
+    t.feedback_type_title.toLowerCase().includes("infra")
+  );
+
+  // ---- Filtering Logic ----
+  let filteredModules = [];
+  if (selectedCourse) {
+    const course = reportData.find((c) => c.courseName === selectedCourse);
+
+    if (course) {
+      filteredModules = course.modules.map((m) => {
+        // Only check if dropdown is selected, else "-"
+        const mid = midType
+          ? m.feedbackTypes.find((ft) => ft.feedbackTypeTitle === midType)
+              ?.averageRating
+          : "-";
+
+        const end = endType
+          ? m.feedbackTypes.find((ft) => ft.feedbackTypeTitle === endType)
+              ?.averageRating
+          : "-";
+
+        const infra = infraType
+          ? m.feedbackTypes.find((ft) => ft.feedbackTypeTitle === infraType)
+              ?.averageRating
+          : "-";
+
+        return {
+          moduleName: m.moduleName,
+          midModule: mid || "-",
+          moduleEnd: end || "-",
+          infrastructure: infra || "-",
+        };
+      });
+    }
+  }
 
   return (
-    <Box sx={{ height: 650, width: "100%", mt: 4, px: 3 }}>
-      <Typography variant="h5" align="center" gutterBottom>
-        Course Wise Report with Ratings
-      </Typography>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-        <Button variant="contained" color="primary" onClick={downloadPDF}>
-          Download PDF
-        </Button>
-      </Box>
+    <div className="container mt-4">
+      <h3 className="text-center mb-4">Coursewise Feedback Report</h3>
 
-      <Grid container spacing={2} mb={2}>
-        <Grid item xs={12} sm={4}>
-          <FormControl fullWidth sx={{ minWidth: 300 }}>
-            <InputLabel sx={{ fontSize: "1.1rem" }}>Course</InputLabel>
-            <Select
-              value={courseFilter}
-              onChange={(e) => {
-                setCourseFilter(e.target.value);
-                setModuleFilter("");
-                setFeedbackFilter("");
-              }}
-              sx={{ fontSize: "1.1rem", height: 55 }}
-              MenuProps={{
-                PaperProps: {
-                  sx: { fontSize: "1.1rem", minWidth: 300 },
-                },
-              }}
-            >
-              <MenuItem value="">All</MenuItem>
-              {uniqueCourses.map((c, i) => (
-                <MenuItem key={i} value={c}>
-                  {c}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Grid item xs={12} sm={4}>
-          <FormControl
-            fullWidth
-            disabled={!courseFilter}
-            sx={{ minWidth: 300 }}
+      {/* Filters */}
+      <div className="row mb-3">
+        {/* Mid Module */}
+        <div className="col-md-3 mb-2">
+          <label className="form-label fw-bold">Mid Module</label>
+          <select
+            className="form-select"
+            value={midType}
+            onChange={(e) => setMidType(e.target.value)}
           >
-            <InputLabel sx={{ fontSize: "1.1rem" }}>Module</InputLabel>
-            <Select
-              value={moduleFilter}
-              onChange={(e) => {
-                setModuleFilter(e.target.value);
-                setFeedbackFilter("");
-              }}
-              sx={{ fontSize: "1.1rem", height: 55 }}
-              MenuProps={{
-                PaperProps: {
-                  sx: { fontSize: "1.1rem", minWidth: 300 },
-                },
-              }}
-            >
-              <MenuItem value="">All</MenuItem>
-              {uniqueModules.map((m, i) => (
-                <MenuItem key={i} value={m}>
-                  {m}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
+            <option value="">Select Mid</option>
+            {midTypes.map((t) => (
+              <option key={t.feedback_type_id} value={t.feedback_type_title}>
+                {t.feedback_type_title}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <Grid item xs={12} sm={4}>
-          <FormControl
-            fullWidth
-            disabled={!moduleFilter}
-            sx={{ minWidth: 300 }}
+        {/* Module End */}
+        <div className="col-md-3 mb-2">
+          <label className="form-label fw-bold">Module End</label>
+          <select
+            className="form-select"
+            value={endType}
+            onChange={(e) => setEndType(e.target.value)}
           >
-            <InputLabel sx={{ fontSize: "1.1rem" }}>Feedback Type</InputLabel>
-            <Select
-              value={feedbackFilter}
-              onChange={(e) => setFeedbackFilter(e.target.value)}
-              sx={{ fontSize: "1.1rem", height: 55 }}
-              MenuProps={{
-                PaperProps: {
-                  sx: { fontSize: "1.1rem", minWidth: 300 },
-                },
-              }}
-            >
-              <MenuItem value="">All</MenuItem>
-              {uniqueFeedbacks.map((f, i) => (
-                <MenuItem key={i} value={f}>
-                  {f}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
+            <option value="">Select End</option>
+            {endTypes.map((t) => (
+              <option key={t.feedback_type_id} value={t.feedback_type_title}>
+                {t.feedback_type_title}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <DataGrid
-        rows={filteredRows}
-        columns={columns}
-        pageSize={10}
-        rowsPerPageOptions={[10, 20, 50]}
-        disableSelectionOnClick
-        autoHeight
-        sx={{
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: "#1976d2",
-            color: "#fff",
-            fontWeight: "bold",
-            fontSize: "15px",
-          },
-          "& .MuiDataGrid-cell": {
-            fontSize: "14px",
-            textAlign: "center",
-          },
-        }}
-      />
-    </Box>
+        {/* Infra End */}
+        <div className="col-md-3 mb-2">
+          <label className="form-label fw-bold">Infra End</label>
+          <select
+            className="form-select"
+            value={infraType}
+            onChange={(e) => setInfraType(e.target.value)}
+          >
+            <option value="">Select Infra</option>
+            {infraTypes.map((t) => (
+              <option key={t.feedback_type_id} value={t.feedback_type_title}>
+                {t.feedback_type_title}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Course */}
+        <div className="col-md-3 mb-2">
+          <label className="form-label fw-bold">Course</label>
+          <select
+            className="form-select"
+            value={selectedCourse}
+            onChange={(e) => setSelectedCourse(e.target.value)}
+          >
+            <option value="">Select Course</option>
+            {courses.map((c) => (
+              <option key={c.course_id} value={c.course_name}>
+                {c.course_name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="table-responsive">
+        <table className="table table-bordered text-center align-middle">
+          <thead className="table-primary">
+            <tr>
+              <th>Sr.No</th>
+              <th>Module Name</th>
+              <th>Mid Module</th>
+              <th>End Module</th>
+              <th>Infrastructure</th>
+            </tr>
+          </thead>
+          <tbody>
+            {selectedCourse && filteredModules.length > 0 ? (
+              filteredModules.map((m, idx) => (
+                <tr key={idx}>
+                  <td>{idx + 1}</td>
+                  <td>{m.moduleName}</td>
+                  <td>{m.midModule}</td>
+                  <td>{m.moduleEnd}</td>
+                  <td>{m.infrastructure}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5">Please select a course to view data</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

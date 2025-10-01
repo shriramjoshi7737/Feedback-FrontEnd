@@ -3,12 +3,13 @@ import Api from "../../services/api";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
 
 function StaffForm() {
   const [staffroles, setStaffroles] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
-  const [staffList, setStaffList] = useState([]);
   const token = localStorage.getItem("token");
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     staffrole_id: "",
@@ -19,7 +20,6 @@ function StaffForm() {
     profileImage: null,
   });
 
-  // Fetch staff roles on load
   useEffect(() => {
     Api.get("staff/GetStaffRoles", {
       headers: {
@@ -33,26 +33,6 @@ function StaffForm() {
         toast.error("Failed to load staff roles");
       });
   }, [token]);
-
-  // Fetch staff list
-  const fetchStaffList = async () => {
-    try {
-      const res = await Api.get("staff/getAllStaff", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setStaffList(res.data);
-    } catch (err) {
-      console.error("Error fetching staff list:", err);
-      toast.error("Failed to load staff list");
-    }
-  };
-
-  useEffect(() => {
-    fetchStaffList();
-  }, []);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -78,17 +58,17 @@ function StaffForm() {
     data.append("last_name", last_name);
     data.append("email", email);
     data.append("password", password);
-    if (formData.profileImage) data.append("profileImage", formData.profileImage);
+    if (formData.profileImage)
+      data.append("profileImage", formData.profileImage);
 
     try {
-      const res = await Api.post("staff/addStaff", data, {
+      await Api.post("staff/addStaff", data, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       });
       toast.success("✅ Staff created successfully!");
-      console.log(res.data);
 
       // Reset form
       setFormData({
@@ -100,8 +80,9 @@ function StaffForm() {
         profileImage: null,
       });
 
-      // Refresh staff list
-      fetchStaffList();
+      setTimeout(() => {
+        navigate("/app/staff-list");
+      }, 1200);
     } catch (err) {
       console.error("Error creating staff:", err);
       toast.error("Failed to create staff");
@@ -210,46 +191,20 @@ function StaffForm() {
             />
           </div>
 
-          {/* Submit */}
-          <div className="d-grid">
+          {/* Submit + Cancel */}
+          <div className="text-center d-flex gap-2 justify-content-center">
             <button type="submit" className="btn btn-success">
               Create Staff
             </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => navigate(-1)}
+            >
+              Cancel
+            </button>
           </div>
         </form>
-      </div>
-
-      {/* Staff List */}
-      <div className="card shadow-lg p-4">
-        <h3 className="text-center mb-4">👥 Staff List</h3>
-        <table className="table table-bordered table-striped">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Email</th>
-            </tr>
-          </thead>
-          <tbody>
-            {staffList.length > 0 ? (
-              staffList.map((staff, index) => (
-                <tr key={staff.staff_id}>
-                  <td>{staff.staff_id}</td>
-                  <td>{staff.first_name}</td>
-                  <td>{staff.last_name}</td>
-                  <td>{staff.email}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="5" className="text-center">
-                  No staff found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
       </div>
     </div>
   );

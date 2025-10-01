@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { DataGrid } from "@mui/x-data-grid";
-import { Box, Button } from "@mui/material";
 import Api from "../../services/api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-//import { ToastContainer } from "react-toastify";
 
 const FeedbackDashboard = () => {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -23,17 +20,7 @@ const FeedbackDashboard = () => {
   });
 
   const [rows, setRows] = useState([]);
-
   const token = localStorage.getItem("token");
-
-  const columns = [
-    { field: "id", headerName: "Sr.No", width: 90 },
-    { field: "question", headerName: "Question", width: 450 },
-    { field: "excellent", headerName: "Excellent", width: 130 },
-    { field: "good", headerName: "Good", width: 130 },
-    { field: "satisfactory", headerName: "Satisfactory", width: 150 },
-    { field: "unsatisfactory", headerName: "Unsatisfactory", width: 170 },
-  ];
 
   // Fetch on mount
   useEffect(() => {
@@ -55,8 +42,7 @@ const FeedbackDashboard = () => {
     }
   };
 
-  // -------------------
-  // Dropdown data (deduplicate with Set)
+  // Dropdown data
   const courses = [...new Set(feedbacks.map((f) => f.courseName))];
   const modules = selectedCourse
     ? [
@@ -67,7 +53,6 @@ const FeedbackDashboard = () => {
         ),
       ]
     : [];
-
   const faculties = selectedModule
     ? [
         ...new Set(
@@ -81,7 +66,6 @@ const FeedbackDashboard = () => {
         ),
       ]
     : [];
-
   const feedbackTypes = selectedFaculty
     ? [
         ...new Set(
@@ -100,8 +84,9 @@ const FeedbackDashboard = () => {
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-GB"); // gives DD/MM/YYYY
+    return d.toLocaleDateString("en-GB");
   };
+
   const getDateRange = () => {
     const filtered = feedbacks.filter(
       (f) =>
@@ -122,8 +107,6 @@ const FeedbackDashboard = () => {
     return `${formatDate(minStart)} to ${formatDate(maxEnd)}`;
   };
 
-  //bind feedbackid and typeid
-  // Find the matching feedback object
   const matchedFeedback = feedbacks.find(
     (f) =>
       f.courseName === selectedCourse &&
@@ -132,32 +115,19 @@ const FeedbackDashboard = () => {
       f.feedbackTypeName === selectedFeedbackType
   );
 
-  // Extract IDs, fallback to 0 if not found
   const feedbackId = matchedFeedback?.feedbackId || 0;
   const feedbackTypeId = matchedFeedback?.feedbackTypeId || 0;
   const feedbackGroupId = matchedFeedback?.feedbackGroupId || 0;
-  // -------------------as per search button click
+
   const getQuestionRating = async () => {
-    if (!selectedCourse) {
-      toast.error("Please select a Course");
-      return;
-    }
-    if (!selectedModule) {
-      toast.error("Please select a Module");
-      return;
-    }
-    if (!selectedFaculty) {
-      toast.error("Please select a Faculty");
-      return;
-    }
-    if (!selectedFeedbackType) {
-      toast.error("Please select a Feedback Type");
-      return;
-    }
-    if (!getDateRange()) {
-      toast.error("Invalid Date Range for this selection");
-      return;
-    }
+    if (!selectedCourse) return toast.error("Please select a Course");
+    if (!selectedModule) return toast.error("Please select a Module");
+    if (!selectedFaculty) return toast.error("Please select a Faculty");
+    if (!selectedFeedbackType)
+      return toast.error("Please select a Feedback Type");
+    if (!getDateRange())
+      return toast.error("Invalid Date Range for this selection");
+
     try {
       const response = await Api.post(
         "FeedbackReport/FacultyFeedbackSummary",
@@ -167,9 +137,9 @@ const FeedbackDashboard = () => {
           course_name: selectedCourse,
           type_name: selectedFeedbackType,
           date: getDateRange(),
-          feedbackTypeId: feedbackTypeId,
-          feedbackId: feedbackId,
-          feedbackGroupId: feedbackGroupId,
+          feedbackTypeId,
+          feedbackId,
+          feedbackGroupId,
         },
         {
           headers: {
@@ -181,14 +151,12 @@ const FeedbackDashboard = () => {
 
       const data = response.data || {};
 
-      // Update summary
       setSummary({
         submitted: data.submitted || 0,
         remaining: data.remaining || 0,
         rating: data.rating ? data.rating.toFixed(2) : 0,
       });
 
-      // Only MCQ questions mapped
       const processedRows = (data.questions || [])
         .filter((q) => q.questionType === "mcq" || q.questionType === "rating")
         .map((item, index) => ({
@@ -211,15 +179,12 @@ const FeedbackDashboard = () => {
     }
   };
 
-  // Export to PDF
   const exportPDF = () => {
     const doc = new jsPDF();
 
-    // Title
     doc.setFontSize(16);
     doc.text("Faculty Feedback Summary", 14, 20);
 
-    // Summary
     doc.setFontSize(12);
     doc.text(`Course: ${selectedCourse}`, 14, 30);
     doc.text(`Module: ${selectedModule}`, 14, 37);
@@ -230,7 +195,6 @@ const FeedbackDashboard = () => {
     doc.text(`Remaining: ${summary.remaining}`, 14, 72);
     doc.text(`Rating: ${summary.rating}`, 14, 79);
 
-    // Questions Table
     autoTable(doc, {
       startY: 90,
       head: [
@@ -256,135 +220,154 @@ const FeedbackDashboard = () => {
       headStyles: { fillColor: [22, 160, 133] },
     });
 
-    // Save the PDF
     doc.save("Feedback_Summary.pdf");
   };
 
   return (
-    <div className="container">
-      <h2 className="page-header text-center mt-3">Faculty Feedback Summary</h2>
+    <div className="container mt-4">
+      <h2 className="text-center mb-4">Faculty Feedback Summary</h2>
 
-      <Box p={3}>
-        {/* Filter Section */}
-        <div className="row mb-3 col-12">
-          {/* Course */}
-          <div className="col-md-3 mb-3">
-            <select
-              className="form-select"
-              value={selectedCourse}
-              onChange={(e) => {
-                setSelectedCourse(e.target.value);
-                setSelectedModule("");
-                setSelectedFaculty("");
-                setSelectedFeedbackType("");
-              }}
-            >
-              <option value="">Course</option>
-              {courses.map((course, i) => (
-                <option key={i} value={course}>
-                  {course}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Module */}
-          <div className="col-md-3 mb-3">
-            <select
-              className="form-select"
-              value={selectedModule}
-              onChange={(e) => {
-                setSelectedModule(e.target.value);
-                setSelectedFaculty("");
-                setSelectedFeedbackType("");
-              }}
-              disabled={!selectedCourse}
-            >
-              <option value="">Module</option>
-              {modules.map((mod, i) => (
-                <option key={i} value={mod}>
-                  {mod}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Faculty */}
-          <div className="col-md-3 mb-3">
-            <select
-              className="form-select"
-              value={selectedFaculty}
-              onChange={(e) => {
-                setSelectedFaculty(e.target.value);
-                setSelectedFeedbackType("");
-              }}
-              disabled={!selectedModule}
-            >
-              <option value="">Faculty</option>
-              {faculties.map((fac, i) => (
-                <option key={i} value={fac}>
-                  {fac}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Feedback Type */}
-          <div className="col-md-3 mb-3">
-            <select
-              className="form-select"
-              value={selectedFeedbackType}
-              onChange={(e) => setSelectedFeedbackType(e.target.value)}
-              disabled={!selectedFaculty}
-            >
-              <option value="">Type</option>
-              {feedbackTypes.map((ft, i) => (
-                <option key={i} value={ft}>
-                  {ft}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-md-4 mb-3">
-            <input
-              type="text"
-              value={getDateRange()}
-              readOnly
-              className="form-control"
-              placeholder="Start Date to End Date"
-            />
-          </div>
+      {/* Filter Section */}
+      <div className="row g-3 mb-3">
+        <div className="col-md-3">
+          <select
+            className="form-select"
+            value={selectedCourse}
+            onChange={(e) => {
+              setSelectedCourse(e.target.value);
+              setSelectedModule("");
+              setSelectedFaculty("");
+              setSelectedFeedbackType("");
+            }}
+          >
+            <option value="">Course</option>
+            {courses.map((course, i) => (
+              <option key={i} value={course}>
+                {course}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Search */}
-        <div className="align-self-end text-center mb-3 width-100">
-          <button className="btn btn-success" onClick={getQuestionRating}>
-            Search
-          </button>
+        <div className="col-md-3">
+          <select
+            className="form-select"
+            value={selectedModule}
+            onChange={(e) => {
+              setSelectedModule(e.target.value);
+              setSelectedFaculty("");
+              setSelectedFeedbackType("");
+            }}
+            disabled={!selectedCourse}
+          >
+            <option value="">Module</option>
+            {modules.map((mod, i) => (
+              <option key={i} value={mod}>
+                {mod}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <hr />
-
-        {/* Summary & Export */}
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={2}
-        >
-          <div>Feedback Submitted: {summary.submitted}</div>
-          <div>Feedback Remaining: {summary.remaining}</div>
-          <div>Rating: {summary.rating}</div>
-          <Button variant="contained" color="primary" onClick={exportPDF}>
-            Export
-          </Button>
-        </Box>
-        <ToastContainer position="top-right" autoClose={3000} />
-        {/* DataGrid */}
-        <div style={{ height: 400, width: "100%" }}>
-          <DataGrid rows={rows} columns={columns} pageSize={5} />
+        <div className="col-md-3">
+          <select
+            className="form-select"
+            value={selectedFaculty}
+            onChange={(e) => {
+              setSelectedFaculty(e.target.value);
+              setSelectedFeedbackType("");
+            }}
+            disabled={!selectedModule}
+          >
+            <option value="">Faculty</option>
+            {faculties.map((fac, i) => (
+              <option key={i} value={fac}>
+                {fac}
+              </option>
+            ))}
+          </select>
         </div>
-      </Box>
+
+        <div className="col-md-3">
+          <select
+            className="form-select"
+            value={selectedFeedbackType}
+            onChange={(e) => setSelectedFeedbackType(e.target.value)}
+            disabled={!selectedFaculty}
+          >
+            <option value="">Type</option>
+            {feedbackTypes.map((ft, i) => (
+              <option key={i} value={ft}>
+                {ft}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="col-md-4 mt-3">
+          <input
+            type="text"
+            value={getDateRange()}
+            readOnly
+            className="form-control"
+            placeholder="Start Date to End Date"
+          />
+        </div>
+      </div>
+
+      <div className="text-center mb-3">
+        <button className="btn btn-success" onClick={getQuestionRating}>
+          Search
+        </button>
+      </div>
+
+      {/* Summary & Export */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <div>Feedback Submitted: {summary.submitted}</div>
+        <div>Feedback Remaining: {summary.remaining}</div>
+        <div>Rating: {summary.rating}</div>
+        <button className="btn btn-primary" onClick={exportPDF}>
+          Export
+        </button>
+      </div>
+
+      <ToastContainer position="top-right" autoClose={3000} />
+
+      {/* Table */}
+      <div className="table-responsive">
+        <table className="table table-bordered table-striped">
+          <thead className="table-success">
+            <tr>
+              <th>Sr.No</th>
+              <th>Question</th>
+              <th>Excellent</th>
+              <th>Good</th>
+              <th>Satisfactory</th>
+              <th>Unsatisfactory</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length > 0 ? (
+              rows.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.id}</td>
+                  <td>{r.question}</td>
+                  <td>{r.excellent}</td>
+                  <td>{r.good}</td>
+                  <td>{r.satisfactory}</td>
+                  <td>{r.unsatisfactory}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="text-center">
+                  No data found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

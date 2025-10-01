@@ -1,33 +1,28 @@
 import React, { useEffect, useState } from "react";
-import Box from "@mui/material/Box";
-import { DataGrid } from "@mui/x-data-grid";
-import Button from "@mui/material/Button";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
-import "./Component.css";
-import { useParams, useLocation } from "react-router-dom";
 import Api from "../../services/api";
+import { useParams, useLocation } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-const columns = [
-  { field: "student_rollno", headerName: "Roll No", flex: 1 },
-  { field: "first_name", headerName: "First Name", flex: 1 },
-  { field: "last_name", headerName: "Last Name", flex: 1 },
-  { field: "email", headerName: "Email ID", flex: 1 },
-  { field: "groupName", headerName: "Group Name", flex: 1 },
-];
+import "bootstrap/dist/css/bootstrap.min.css";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 export default function StudentList() {
   const { feedbackGroupId } = useParams();
   const location = useLocation();
   const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // pagination states
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   const isSubmittedPage = location.pathname.includes("student-list");
   const token = localStorage.getItem("token");
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const endpoint = isSubmittedPage
           ? `StudentApi/Submitted/${feedbackGroupId}`
@@ -40,16 +35,12 @@ export default function StudentList() {
           },
         });
 
-        const dataWithIds = res.data.map((s, index) => ({
-          id: index + 1,
-          ...s,
-        }));
-
-        setRows(dataWithIds);
+        setRows(res.data || []);
       } catch (err) {
         console.error("Error fetching students:", err);
         toast.error("Failed to load student data. Please try again.");
       }
+      setLoading(false);
     };
 
     fetchData();
@@ -63,6 +54,7 @@ export default function StudentList() {
 
     const doc = new jsPDF();
     const tableColumn = [
+      "Sr No",
       "Roll No",
       "First Name",
       "Last Name",
@@ -71,8 +63,9 @@ export default function StudentList() {
     ];
     const tableRows = [];
 
-    rows.forEach((row) => {
+    rows.forEach((row, index) => {
       tableRows.push([
+        index + 1,
         row.student_rollno || "",
         row.first_name || "",
         row.last_name || "",
@@ -106,32 +99,101 @@ export default function StudentList() {
     toast.success("PDF exported successfully!");
   };
 
+  // Pagination helpers
+  const totalPages = Math.ceil(rows.length / pageSize);
+  const paginatedRows = rows.slice((page - 1) * pageSize, page * pageSize);
+
   return (
-    <div className="container">
-      <h2 className="table-header text-center mt-3">
+    <div className="container my-4">
+      <ToastContainer position="top-right" autoClose={3000} />
+
+      <h2 className="text-center mb-4">
         {isSubmittedPage ? "Filled Student List" : "Remaining Student List"}
       </h2>
 
-      <div className="d-flex justify-content-end mb-2">
-        <Button variant="contained" color="primary" onClick={exportPDF}>
+      <div className="d-flex justify-content-end mb-3">
+        <button className="btn btn-primary" onClick={exportPDF}>
           Export to PDF
-        </Button>
+        </button>
       </div>
 
-      <Box sx={{ height: 400, width: "100%" }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          getRowId={(row) => row.id}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 5 } },
-          }}
-          pageSizeOptions={[5, 10, 20]}
-          disableRowSelectionOnClick
-        />
-      </Box>
+      <div className="table-responsive">
+        <table className="table table-bordered table-striped">
+          <thead className="table-dark">
+            <tr>
+              <th>Roll No</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email ID</th>
+              <th>Group Name</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="6" className="text-center">
+                  Loading...
+                </td>
+              </tr>
+            ) : paginatedRows.length > 0 ? (
+              paginatedRows.map((row, index) => (
+                <tr key={index}>
+                  <td>{row.student_rollno}</td>
+                  <td>{row.first_name}</td>
+                  <td>{row.last_name}</td>
+                  <td>{row.email}</td>
+                  <td>{row.groupName || "-"}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="text-center">
+                  No records found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      <ToastContainer position="top-right" autoClose={3000} />
+      {/* Pagination controls */}
+      <div className="d-flex justify-content-between align-items-center mt-3">
+        <div>
+          Page {page} of {totalPages || 1}
+        </div>
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            disabled={page === totalPages || totalPages === 0}
+          >
+            Next
+          </button>
+
+          <select
+            className="form-select form-select-sm"
+            style={{ width: "80px" }}
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
+          >
+            {[5, 10, 20].map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
   );
 }
